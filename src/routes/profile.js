@@ -19,7 +19,7 @@ profileRouter.get("/profile", userAuth,async (req, res) => {
  profileRouter.patch("/profile/edit", userAuth,async (req , res)=>{
    try{
     if(!validateEditProfile(req)){
-        throw new Error("somethin wenr wrong");
+        throw new Error("something went wrong");
    }
     const loggedin = req.user;
     console.log(loggedin);

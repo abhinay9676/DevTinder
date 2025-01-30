@@ -1,37 +1,33 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
-const userAuth = async(req , res ,next)  =>{
+const userAuth = async (req, res, next) => {
+  try {
+    const { token } = req.cookies;
 
-try{
+    if (!token) {
+      return res.status(401).send("Token is not valid"); // Use `return` to stop further execution.
+    }
 
+    const decodeobj = await jwt.verify(token, "Dev@tinder");
+    const { _id } = decodeobj;
 
-    const {token} = req.cookies;
-    const decodeobj = await jwt.verify(token,"Dev@tinder");
+    console.log(_id);
 
-     const {_id}=decodeobj;
+    const user = await User.findById(_id);
 
-          console.log(_id);
+    if (!user) {
+      return res.status(404).send("User not found"); // Return to prevent calling `next()` after sending a response.
+    }
 
-          const user = await User.findById(_id);
+    req.user = user; // Attach the user object to the request.
+    next(); // Proceed to the next middleware or route handler.
+  } catch (err) {
+    console.error(err); // Log the error for debugging purposes.
+    return res.status(400).send("Something went wrong"); // Ensure a return here too.
+  }
+};
 
-          if(!user){
-            res.send("user not found");
-          }
-
-           req.user = user;
-
-          next();
-    
-}
-
-catch(err){
-   res.send("something went wrong");
-}
-}
-     
-
-
-module.exports={
-    userAuth,
-}
+module.exports = {
+  userAuth,
+};
