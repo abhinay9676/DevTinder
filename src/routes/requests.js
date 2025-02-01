@@ -118,7 +118,7 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async (req, res)
     }
 });
 
-requestRouter.post("w", userAuth, async (req, res) => {
+requestRouter.post("/request/review/:status/:requestId", userAuth, async (req, res) => {
     try{
        const loggedin = req.user;
        const {status,requestId} = req.params;

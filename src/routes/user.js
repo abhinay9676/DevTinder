@@ -15,8 +15,9 @@ userRouter.get("/user/request/pending",userAuth,async(req,res)=>{
         const connection = await Connection.find({
         toUserId: loggedin._id,
         status: "interested",
-        }).populate("fromUserId",["firstName","lastName"]);
+        }).populate("fromUserId",["firstName","lastName","photoUrl","about","age"]);
 
+        
         const data = connection;
 
         console.log(data);
@@ -44,7 +45,7 @@ userRouter.get("/user/connections",userAuth,async(req,res)=>{
             {toUserId: loggedin._id,status: "accepted"}
         ]
        
-    }).populate("fromUserId",["firstName","lastName"])
+    }).populate("fromUserId",["firstName","lastName","photoUrl","about","age"])
 
     const data = connection.map(row=>row.fromUserId);
 
@@ -52,6 +53,7 @@ userRouter.get("/user/connections",userAuth,async(req,res)=>{
         data
     });
 }
+    
     catch(err){
        res.status(400).send("something went wrong");
     }

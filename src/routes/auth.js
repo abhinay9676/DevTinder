@@ -1,87 +1,76 @@
-const express=require("express");
-
-const authRouter = express.Router();
-const {validateSignupData} = require("../utils/validation");
-const User = require("../models/user");
+const express = require("express");
 const bcrypt = require("bcrypt");
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 
+const authRouter = express.Router();
+const { validateSignupData } = require("../utils/validation");
+const User = require("../models/user");
 
-authRouter.post("/signup",async(req , res)=>{
+// Environment variable for JWT secret
+const JWT_SECRET = process.env.JWT_SECRET || "Dev@tinder";
 
-   // const user = new User(req.body);
-   // console.log(user);
-    try{
+// Signup Route
+authRouter.post("/signup", async (req, res) => {
+    try {
+        validateSignupData(req);
+        const { firstName, lastName, emailId, password } = req.body;
 
+        // Hash password asynchronously
+        const passwordHash = await bcrypt.hash(password, 10);
 
-     validateSignupData(req);
+        const user = new User({
+            firstName,
+            lastName,
+            emailId,
+            password: passwordHash
+        });
 
-     const {firstName,lastName,emailId,password} = req.body;
+        const savedUser = await user.save();
+        const token = jwt.sign({ _id: savedUser._id }, JWT_SECRET, { expiresIn: "7d" });
 
-     const passwordhash= await bcrypt.hashSync(password, 10);
-     console.log(passwordhash);
+        // Set token in a cookie
+        res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production" });
 
-      const user = new User({
-         firstName,
-         lastName,
-         emailId,
-         password: passwordhash
-      });
-      console.log(user);
-      await user.save();
-      res.send("user added successfully");
-     }
-
-
-      catch(err){
-      res.status(400).send("something went wrong");
-     }
-      
+        res.status(201).send({ message: "User added successfully", data: savedUser });
+    } catch (err) {
+        console.error("Signup Error:", err.message);
+        res.status(400).send({ error: "Signup failed", details: err.message });
+    }
 });
 
-
+// Login Route
 authRouter.post("/login", async (req, res) => {
-   try {
-       const { emailId, password } = req.body;
+    try {
+        const { emailId, password } = req.body;
+        const user = await User.findOne({ emailId });
 
-       // Find user by email
-       const user = await User.findOne({ emailId });
-       if (!user) {
-           return res.status(404).send({ error: "User not found" });
-       }
+        if (!user) {
+            return res.status(404).send({ error: "User not found" });
+        }
 
-       // Validate password
-       const isPasswordValid = await bcrypt.compare(password, user.password);
-       if (isPasswordValid){
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).send({ error: "Invalid credentials" });
+        }
 
-      //  create a jwt token
-      
-      const token = await jwt.sign({_id : user._id},"Dev@tinder");
-      console.log(token);
+        // Generate JWT Token
+        const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: "7d" });
 
+        // Securely attach token to a cookie
+        res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production" });
 
-      //  attach token to a cookie and send back to browser
-
-        res.cookie("token", token);
-        res.status(200).send(user);
-       }
-       else{
-         return res.status(401).send({ error: "Invalid credentials" })
-       }
-
-       // Successful login response
-       
-   } catch (err) {
-       console.error("Login Error:", err.message);
-       res.status(500).send({ error: "Login failed", details: err.message });
-   }
+        res.status(200).send({ message: "Login successful", user });
+    } catch (err) {
+        console.error("Login Error:", err.message);
+        res.status(500).send({ error: "Login failed", details: err.message });
+    }
 });
 
-authRouter.post("/logout", async (req, res) => {
-    res.cookie('token', null, { expires: new Date(Date.now() + 0), httpOnly: true });
-    res.send("user is logged out");
+// Logout Route
+authRouter.post("/logout", (req, res) => {
+    res.cookie("token", "", { expires: new Date(0), httpOnly: true });
+    res.send({ message: "User logged out successfully" });
 });
 
-
-module.exports=authRouter;
+module.exports = authRouter;
