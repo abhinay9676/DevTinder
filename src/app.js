@@ -27,8 +27,8 @@ app.use("/",userRouter);
 connectDB()
    .then(() => {
    console.log("database connection is connected");
-   app.listen(3000, ()=> {
-      console.log('app is ruuning on server 3000');
+   app.listen(3001, ()=> {
+      console.log('app is ruuning on server 3001');
    });
 })
 .catch((err)=>{
