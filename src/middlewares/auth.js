@@ -9,7 +9,7 @@ const userAuth = async (req, res, next) => {
       return res.status(401).send("Token is not valid"); // Use `return` to stop further execution.
     }
 
-    const decodeobj = await jwt.verify(token, "Dev@tinder");
+    const decodeobj = await jwt.verify(token, process.env.JWT_SECRET);
     const { _id } = decodeobj;
 
     console.log(_id);
